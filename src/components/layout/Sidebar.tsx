@@ -19,7 +19,7 @@ const Sidebar = () => {
 
   return (
     <aside className="w-64 bg-white shadow-lg h-screen fixed left-0 top-0 z-50">
-      <div className="p-[18px] border-b border-gray-200">
+      <div className="p-[9px] border-b border-gray-200">
         <h1 className="text-2xl font-bold text-primary-600">
           {t('app.title')}
         </h1>
