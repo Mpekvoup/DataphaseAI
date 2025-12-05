@@ -107,3 +107,44 @@ export interface AIInsight {
   confidence: number;
   appliedAt?: Date;
 }
+
+// ML Training Types
+export interface MLDataset {
+  id: number;
+  name: string;
+  file_path: string;
+  status: 'uploaded' | 'processing' | 'ready' | 'error';
+  uploadedAt: Date;
+  size?: number;
+}
+
+export interface MLExperiment {
+  id: number;
+  dataset_id: number;
+  model_type: 'forecast' | 'anomaly';
+  status: 'pending' | 'running' | 'completed' | 'failed';
+  task_id?: string;
+  created_at: Date;
+  completed_at?: Date;
+  metrics?: MLMetrics;
+}
+
+export interface MLMetrics {
+  accuracy?: number;
+  precision?: number;
+  recall?: number;
+  f1_score?: number;
+  mse?: number;
+  mae?: number;
+  rmse?: number;
+  [key: string]: number | undefined;
+}
+
+export interface TrainingProgress {
+  experimentId: number;
+  status: 'pending' | 'running' | 'completed' | 'failed';
+  progress: number; // 0-100
+  currentEpoch?: number;
+  totalEpochs?: number;
+  message?: string;
+}

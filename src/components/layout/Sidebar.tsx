@@ -4,7 +4,8 @@ import {
   LayoutDashboard,
   Ticket,
   BarChart3,
-  Settings
+  Settings,
+  Brain
 } from 'lucide-react';
 
 const Sidebar = () => {
@@ -14,6 +15,7 @@ const Sidebar = () => {
     { path: '/', icon: LayoutDashboard, label: t('nav.dashboard') },
     { path: '/tickets', icon: Ticket, label: t('nav.tickets') },
     { path: '/analytics', icon: BarChart3, label: t('nav.analytics') },
+    { path: '/ml-training', icon: Brain, label: 'ML Обучение' },
     { path: '/settings', icon: Settings, label: t('nav.settings') },
   ];
 

@@ -5,6 +5,7 @@ import Tickets from './pages/Tickets/Tickets';
 import Analytics from './pages/Analytics/Analytics';
 import Login from './pages/Login/Login';
 import MyAnalytics from './pages/MyAnalytics/MyAnalytics';
+import MLTraining from './pages/MLTraining/MLTraining';
 
 // Компонент защиты маршрутов
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -30,6 +31,7 @@ function App() {
           <Route path="tickets" element={<Tickets />} />
           <Route path="analytics" element={<Analytics />} />
           <Route path="my-analytics" element={<MyAnalytics />} />
+          <Route path="ml-training" element={<MLTraining />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />
