@@ -1,0 +1,101 @@
+{
+  "app": {
+    "title": "AI Help Desk",
+    "description": "Ақылды қолдау қызметі"
+  },
+  "nav": {
+    "dashboard": "Басқару панелі",
+    "tickets": "Өтінімдер",
+    "analytics": "Аналитика",
+    "settings": "Параметрлер"
+  },
+  "dashboard": {
+    "title": "Басқару панелі",
+    "stats": {
+      "totalTickets": "Барлық өтінімдер",
+      "autoResolved": "Авто-шешілген",
+      "avgResponseTime": "Орташа жауап уақыты",
+      "slaCompliance": "SLA сәйкестігі",
+      "activeTickets": "Белсенді өтінімдер",
+      "accuracyRate": "AI дәлдігі"
+    },
+    "charts": {
+      "ticketsTrend": "Өтінімдер динамикасы",
+      "byStatus": "Мәртебе бойынша",
+      "byPriority": "Басымдық бойынша",
+      "byCategory": "Санат бойынша"
+    }
+  },
+  "tickets": {
+    "title": "Өтінімдер",
+    "new": "Жаңа өтінім",
+    "search": "Өтінімдерді іздеу...",
+    "filters": "Сүзгілер",
+    "status": {
+      "new": "Жаңа",
+      "in_progress": "Орындалуда",
+      "pending": "Күту",
+      "resolved": "Шешілді",
+      "closed": "Жабық",
+      "auto_resolved": "Авто-шешілді"
+    },
+    "priority": {
+      "low": "Төмен",
+      "medium": "Орташа",
+      "high": "Жоғары",
+      "urgent": "Шұғыл"
+    },
+    "category": {
+      "technical": "Техникалық",
+      "billing": "Қаржы",
+      "access": "Қол жеткізу",
+      "general": "Жалпы",
+      "complaint": "Шағым",
+      "feature_request": "Функция сұрауы"
+    },
+    "channel": {
+      "email": "Email",
+      "chat": "Чат",
+      "portal": "Портал",
+      "phone": "Телефон"
+    },
+    "details": {
+      "title": "Өтінім мәліметтері",
+      "customer": "Тұтынушы",
+      "department": "Бөлім",
+      "assignedTo": "Тағайындалды",
+      "createdAt": "Құрылды",
+      "updatedAt": "Жаңартылды",
+      "aiConfidence": "AI сенімділігі",
+      "aiSuggestions": "AI ұсыныстары"
+    }
+  },
+  "analytics": {
+    "title": "Аналитика",
+    "timeRange": "Кезең",
+    "departmentPerformance": "Бөлімдер тиімділігі",
+    "resolutionTrend": "Шешімдер динамикасы",
+    "channelDistribution": "Арналар бойынша бөлу"
+  },
+  "settings": {
+    "title": "Параметрлер",
+    "general": "Жалпы",
+    "ai": "AI параметрлері",
+    "departments": "Бөлімдер",
+    "notifications": "Хабарландырулар",
+    "language": "Интерфейс тілі"
+  },
+  "common": {
+    "save": "Сақтау",
+    "cancel": "Бас тарту",
+    "delete": "Жою",
+    "edit": "Өңдеу",
+    "view": "Қарау",
+    "close": "Жабу",
+    "loading": "Жүктелуде...",
+    "error": "Қате",
+    "success": "Сәтті",
+    "confirm": "Растау",
+    "back": "Артқа"
+  }
+}

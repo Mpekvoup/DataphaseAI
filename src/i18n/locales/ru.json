@@ -1,0 +1,101 @@
+{
+  "app": {
+    "title": "ИИ Help Desk",
+    "description": "Умный сервис поддержки"
+  },
+  "nav": {
+    "dashboard": "Панель управления",
+    "tickets": "Заявки",
+    "analytics": "Аналитика",
+    "settings": "Настройки"
+  },
+  "dashboard": {
+    "title": "Панель управления",
+    "stats": {
+      "totalTickets": "Всего заявок",
+      "autoResolved": "Авто-решенных",
+      "avgResponseTime": "Среднее время ответа",
+      "slaCompliance": "Соответствие SLA",
+      "activeTickets": "Активных заявок",
+      "accuracyRate": "Точность ИИ"
+    },
+    "charts": {
+      "ticketsTrend": "Динамика заявок",
+      "byStatus": "По статусам",
+      "byPriority": "По приоритетам",
+      "byCategory": "По категориям"
+    }
+  },
+  "tickets": {
+    "title": "Заявки",
+    "new": "Новая заявка",
+    "search": "Поиск заявок...",
+    "filters": "Фильтры",
+    "status": {
+      "new": "Новая",
+      "in_progress": "В работе",
+      "pending": "Ожидание",
+      "resolved": "Решена",
+      "closed": "Закрыта",
+      "auto_resolved": "Авто-решена"
+    },
+    "priority": {
+      "low": "Низкий",
+      "medium": "Средний",
+      "high": "Высокий",
+      "urgent": "Срочный"
+    },
+    "category": {
+      "technical": "Техническая",
+      "billing": "Финансы",
+      "access": "Доступ",
+      "general": "Общая",
+      "complaint": "Жалоба",
+      "feature_request": "Запрос функции"
+    },
+    "channel": {
+      "email": "Email",
+      "chat": "Чат",
+      "portal": "Портал",
+      "phone": "Телефон"
+    },
+    "details": {
+      "title": "Детали заявки",
+      "customer": "Клиент",
+      "department": "Отдел",
+      "assignedTo": "Назначена",
+      "createdAt": "Создана",
+      "updatedAt": "Обновлена",
+      "aiConfidence": "Уверенность ИИ",
+      "aiSuggestions": "Рекомендации ИИ"
+    }
+  },
+  "analytics": {
+    "title": "Аналитика",
+    "timeRange": "Период",
+    "departmentPerformance": "Эффективность отделов",
+    "resolutionTrend": "Динамика решений",
+    "channelDistribution": "Распределение по каналам"
+  },
+  "settings": {
+    "title": "Настройки",
+    "general": "Общие",
+    "ai": "Настройки ИИ",
+    "departments": "Отделы",
+    "notifications": "Уведомления",
+    "language": "Язык интерфейса"
+  },
+  "common": {
+    "save": "Сохранить",
+    "cancel": "Отмена",
+    "delete": "Удалить",
+    "edit": "Редактировать",
+    "view": "Просмотр",
+    "close": "Закрыть",
+    "loading": "Загрузка...",
+    "error": "Ошибка",
+    "success": "Успешно",
+    "confirm": "Подтвердить",
+    "back": "Назад"
+  }
+}
