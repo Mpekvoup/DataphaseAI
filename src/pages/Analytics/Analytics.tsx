@@ -1,11 +1,8 @@
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  AreaChart,
-  Area,
   BarChart,
   Bar,
-  LineChart,
-  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -16,74 +13,104 @@ import {
   PolarGrid,
   PolarAngleAxis,
   PolarRadiusAxis,
-  Radar
+  Radar,
+  PieChart,
+  Pie,
+  Cell
 } from 'recharts';
+import { Loader2, AlertCircle } from 'lucide-react';
+import { apiService } from '../../services/api';
 
 const Analytics = () => {
   const { t } = useTranslation();
+  const [stats, setStats] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Демо данные для аналитики
-  const resolutionTrendData = [
-    { month: 'Июль', avgTime: 45, tickets: 450 },
-    { month: 'Август', avgTime: 42, tickets: 520 },
-    { month: 'Сентябрь', avgTime: 38, tickets: 580 },
-    { month: 'Октябрь', avgTime: 35, tickets: 610 },
-    { month: 'Ноябрь', avgTime: 28, tickets: 670 },
-    { month: 'Декабрь', avgTime: 25, tickets: 720 },
-  ];
+  useEffect(() => {
+    loadStats();
+  }, []);
 
-  const departmentData = [
-    {
-      department: 'IT Support',
-      avgResolutionTime: 23,
-      ticketsHandled: 234,
-      satisfactionRate: 4.5
-    },
-    {
-      department: 'Tech Team',
-      avgResolutionTime: 45,
-      ticketsHandled: 156,
-      satisfactionRate: 4.7
-    },
-    {
-      department: 'Billing',
-      avgResolutionTime: 15,
-      ticketsHandled: 189,
-      satisfactionRate: 4.3
-    },
-    {
-      department: 'Customer Success',
-      avgResolutionTime: 18,
-      ticketsHandled: 98,
-      satisfactionRate: 4.6
+  const loadStats = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await apiService.getStats();
+      setStats(data);
+    } catch (err) {
+      console.error('Error loading stats:', err);
+      setError('Не удалось загрузить статистику');
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="animate-spin text-primary-600" size={48} />
+        <span className="ml-3 text-gray-600 text-lg">Загрузка аналитики...</span>
+      </div>
+    );
+  }
+
+  if (error || !stats) {
+    return (
+      <div className="flex flex-col items-center justify-center h-96">
+        <AlertCircle className="text-red-600" size={48} />
+        <p className="mt-4 text-red-600 font-medium">{error || 'Нет данных'}</p>
+        <button onClick={loadStats} className="mt-4 btn-primary">
+          Попробовать снова
+        </button>
+      </div>
+    );
+  }
+
+  // Подготовка данных из реальной статистики
+  const departmentData = Object.entries(stats.by_category || {}).map(([category, count]) => ({
+    department: category === 'technical' ? 'Tech Team' :
+                category === 'billing' ? 'Billing' :
+                category === 'access' ? 'IT Support' :
+                category === 'general' ? 'Customer Success' : category,
+    ticketsHandled: count as number,
+    category: category
+  }));
 
   const channelDistribution = [
-    { channel: 'Email', count: 245, autoResolved: 120 },
-    { channel: 'Чат', count: 189, autoResolved: 95 },
-    { channel: 'Портал', count: 156, autoResolved: 78 },
-    { channel: 'Телефон', count: 89, autoResolved: 15 }
+    { channel: 'Email', count: 0, autoResolved: 0 },
+    { channel: 'Telegram', count: 0, autoResolved: 0 },
+    { channel: 'Портал', count: 0, autoResolved: 0 },
+    { channel: 'Телефон', count: 0, autoResolved: 0 }
   ];
 
   const aiPerformance = [
-    { metric: 'Точность', value: 94 },
-    { metric: 'Скорость', value: 98 },
-    { metric: 'Удовлетворенность', value: 89 },
-    { metric: 'Автоматизация', value: 92 },
-    { metric: 'SLA', value: 96 }
+    {
+      metric: 'Автоматизация',
+      value: Math.round(stats.auto_resolved_percentage || 0)
+    },
+    {
+      metric: 'Точность',
+      value: stats.total_tickets > 0 ? Math.round((stats.auto_resolved / stats.total_tickets) * 100) : 0
+    },
+    {
+      metric: 'Эффективность',
+      value: stats.active_tickets > 0 ? Math.round(((stats.total_tickets - stats.active_tickets) / stats.total_tickets) * 100) : 0
+    }
   ];
 
-  const hourlyDistribution = [
-    { hour: '00:00', tickets: 12 },
-    { hour: '03:00', tickets: 8 },
-    { hour: '06:00', tickets: 15 },
-    { hour: '09:00', tickets: 45 },
-    { hour: '12:00', tickets: 67 },
-    { hour: '15:00', tickets: 58 },
-    { hour: '18:00', tickets: 42 },
-    { hour: '21:00', tickets: 28 }
-  ];
+  const statusDistribution = Object.entries(stats.by_status || {}).map(([status, count]) => ({
+    name: status === 'new' ? 'Новые' :
+          status === 'in_progress' ? 'В работе' :
+          status === 'auto_resolved' ? 'Авто-решенные' :
+          status === 'resolved' ? 'Решенные' :
+          status === 'closed' ? 'Закрытые' : status,
+    value: count as number,
+    color: status === 'new' ? '#3b82f6' :
+           status === 'in_progress' ? '#f59e0b' :
+           status === 'auto_resolved' ? '#10b981' :
+           status === 'resolved' ? '#22c55e' :
+           status === 'closed' ? '#6b7280' : '#8b5cf6'
+  })).filter(item => item.value > 0);
 
   return (
     <div className="space-y-6">
@@ -92,223 +119,188 @@ const Analytics = () => {
           {t('analytics.title')}
         </h1>
         <p className="text-gray-600">
-          Детальная аналитика и отчеты по работе системы
+          Детальная аналитика на основе реальных данных
         </p>
       </div>
 
-      {/* Фильтры периода */}
-      <div className="card">
-        <div className="flex items-center gap-4">
-          <label className="text-sm font-medium text-gray-700">
-            {t('analytics.timeRange')}:
-          </label>
-          <select className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
-            <option>Последние 7 дней</option>
-            <option>Последние 30 дней</option>
-            <option>Последние 3 месяца</option>
-            <option>Последний год</option>
-            <option>Произвольный период</option>
-          </select>
+      {/* Общая статистика */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="card">
+          <p className="text-sm text-gray-600 mb-1">Всего тикетов</p>
+          <p className="text-3xl font-bold text-primary-600">{stats.total_tickets || 0}</p>
         </div>
-      </div>
-
-      {/* Динамика решений */}
-      <div className="card">
-        <h3 className="text-lg font-semibold mb-4 text-gray-900">
-          {t('analytics.resolutionTrend')}
-        </h3>
-        <ResponsiveContainer width="100%" height={350}>
-          <AreaChart data={resolutionTrendData}>
-            <defs>
-              <linearGradient id="colorTime" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
-                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-              </linearGradient>
-              <linearGradient id="colorTickets" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
-                <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="month" />
-            <YAxis yAxisId="left" />
-            <YAxis yAxisId="right" orientation="right" />
-            <Tooltip />
-            <Legend />
-            <Area
-              yAxisId="left"
-              type="monotone"
-              dataKey="avgTime"
-              stroke="#3b82f6"
-              fillOpacity={1}
-              fill="url(#colorTime)"
-              name="Среднее время (мин)"
-            />
-            <Area
-              yAxisId="right"
-              type="monotone"
-              dataKey="tickets"
-              stroke="#10b981"
-              fillOpacity={1}
-              fill="url(#colorTickets)"
-              name="Количество заявок"
-            />
-          </AreaChart>
-        </ResponsiveContainer>
+        <div className="card">
+          <p className="text-sm text-gray-600 mb-1">Авто-решено</p>
+          <p className="text-3xl font-bold text-green-600">{stats.auto_resolved || 0}</p>
+          <p className="text-xs text-gray-500 mt-1">{stats.auto_resolved_percentage?.toFixed(1)}%</p>
+        </div>
+        <div className="card">
+          <p className="text-sm text-gray-600 mb-1">Активных</p>
+          <p className="text-3xl font-bold text-orange-600">{stats.active_tickets || 0}</p>
+        </div>
+        <div className="card">
+          <p className="text-sm text-gray-600 mb-1">Категорий</p>
+          <p className="text-3xl font-bold text-blue-600">{Object.keys(stats.by_category || {}).length}</p>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Производительность отделов */}
-        <div className="card">
-          <h3 className="text-lg font-semibold mb-4 text-gray-900">
-            {t('analytics.departmentPerformance')}
-          </h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={departmentData} layout="vertical">
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis type="number" />
-              <YAxis dataKey="department" type="category" width={120} />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="avgResolutionTime" fill="#f59e0b" name="Время (мин)" />
-              <Bar dataKey="ticketsHandled" fill="#0ea5e9" name="Заявок" />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+        {/* Распределение по категориям */}
+        {departmentData.length > 0 && (
+          <div className="card">
+            <h3 className="text-lg font-semibold mb-4 text-gray-900">
+              Распределение по категориям
+            </h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={departmentData} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis type="number" />
+                <YAxis dataKey="department" type="category" width={120} />
+                <Tooltip />
+                <Bar dataKey="ticketsHandled" fill="#0ea5e9" name="Заявок" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
 
-        {/* Распределение по каналам */}
-        <div className="card">
-          <h3 className="text-lg font-semibold mb-4 text-gray-900">
-            {t('analytics.channelDistribution')}
-          </h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={channelDistribution}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="channel" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="count" fill="#8b5cf6" name="Всего" />
-              <Bar dataKey="autoResolved" fill="#10b981" name="Авто-решено" />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+        {/* Распределение по статусам */}
+        {statusDistribution.length > 0 && (
+          <div className="card">
+            <h3 className="text-lg font-semibold mb-4 text-gray-900">
+              Распределение по статусам
+            </h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={statusDistribution}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, percent }) =>
+                    `${name} ${(percent * 100).toFixed(0)}%`
+                  }
+                  outerRadius={100}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {statusDistribution.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        )}
 
         {/* Производительность ИИ */}
-        <div className="card">
-          <h3 className="text-lg font-semibold mb-4 text-gray-900">
-            Производительность ИИ
-          </h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <RadarChart data={aiPerformance}>
-              <PolarGrid />
-              <PolarAngleAxis dataKey="metric" />
-              <PolarRadiusAxis angle={90} domain={[0, 100]} />
-              <Radar
-                name="Показатели"
-                dataKey="value"
-                stroke="#0ea5e9"
-                fill="#0ea5e9"
-                fillOpacity={0.6}
-              />
-              <Tooltip />
-            </RadarChart>
-          </ResponsiveContainer>
-        </div>
+        {aiPerformance.length > 0 && (
+          <div className="card">
+            <h3 className="text-lg font-semibold mb-4 text-gray-900">
+              Производительность ИИ
+            </h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <RadarChart data={aiPerformance}>
+                <PolarGrid />
+                <PolarAngleAxis dataKey="metric" />
+                <PolarRadiusAxis angle={90} domain={[0, 100]} />
+                <Radar
+                  name="Показатели"
+                  dataKey="value"
+                  stroke="#0ea5e9"
+                  fill="#0ea5e9"
+                  fillOpacity={0.6}
+                />
+                <Tooltip />
+              </RadarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
 
-        {/* Почасовое распределение */}
-        <div className="card">
-          <h3 className="text-lg font-semibold mb-4 text-gray-900">
-            Почасовое распределение заявок
-          </h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={hourlyDistribution}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="hour" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Line
-                type="monotone"
-                dataKey="tickets"
-                stroke="#f59e0b"
-                strokeWidth={3}
-                name="Заявок"
-                dot={{ fill: '#f59e0b', r: 5 }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
+        {/* Распределение по приоритетам */}
+        {Object.keys(stats.by_priority || {}).length > 0 && (
+          <div className="card">
+            <h3 className="text-lg font-semibold mb-4 text-gray-900">
+              Распределение по приоритетам
+            </h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart
+                data={Object.entries(stats.by_priority || {}).map(([priority, count]) => ({
+                  priority: priority === 'low' ? 'Низкий' :
+                           priority === 'medium' ? 'Средний' :
+                           priority === 'high' ? 'Высокий' :
+                           priority === 'urgent' ? 'Срочный' : priority,
+                  count: count as number
+                }))}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="priority" />
+                <YAxis />
+                <Tooltip />
+                <Bar dataKey="count" fill="#f59e0b" name="Количество" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
       </div>
 
       {/* Таблица детальной статистики */}
-      <div className="card overflow-hidden p-0">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900">
-            Детальная статистика по отделам
-          </h3>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Отдел
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Среднее время решения
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Обработано заявок
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Удовлетворенность
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Статус
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {departmentData.map((dept) => (
-                <tr key={dept.department} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">
-                    {dept.department}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-gray-600">
-                    {dept.avgResolutionTime} мин
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-gray-600">
-                    {dept.ticketsHandled}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center gap-2">
-                      <div className="flex">
-                        {[...Array(5)].map((_, i) => (
-                          <span
-                            key={i}
-                            className={i < Math.floor(dept.satisfactionRate) ? 'text-yellow-400' : 'text-gray-300'}
-                          >
-                            ★
-                          </span>
-                        ))}
-                      </div>
-                      <span className="text-sm text-gray-600">
-                        {dept.satisfactionRate}/5
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
-                      Отлично
-                    </span>
-                  </td>
+      {departmentData.length > 0 && (
+        <div className="card overflow-hidden p-0">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-900">
+              Детальная статистика по категориям
+            </h3>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Категория
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Обработано заявок
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Процент от общего
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {departmentData.map((dept) => (
+                  <tr key={dept.category} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">
+                      {dept.department}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-gray-600">
+                      {dept.ticketsHandled}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-gray-600">
+                      {stats.total_tickets > 0
+                        ? ((dept.ticketsHandled / stats.total_tickets) * 100).toFixed(1)
+                        : 0}%
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Сообщение если нет данных */}
+      {stats.total_tickets === 0 && (
+        <div className="card">
+          <div className="flex flex-col items-center justify-center py-12">
+            <AlertCircle className="text-gray-400" size={48} />
+            <p className="mt-4 text-gray-600 font-medium">Нет данных для аналитики</p>
+            <p className="text-sm text-gray-500 mt-2">
+              Данные появятся после обработки первых тикетов
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
