@@ -14,7 +14,7 @@ class GeminiService:
     def __init__(self):
         # Use Gemini 1.5 Flash for fast responses
         self.model = genai.GenerativeModel('gemini-1.5-flash')
-        self.embedding_model = 'models/embedding-001'
+        self.embedding_model = 'models/text-embedding-004'
 
     async def classify_ticket(self, title: str, description: str, language: str = "ru") -> Dict:
         """
