@@ -10,20 +10,20 @@ const Header = () => {
   };
 
   return (
-    <header className="bg-white shadow-sm border-b border-gray-200 fixed top-0 left-64 right-0 z-10">
+    <header className="bg-white shadow-sm border-b border-gray-200 fixed top-0 left-64 right-0 z-10 overflow-hidden">
       <div className="flex items-center justify-between px-8 py-4">
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <input
             type="text"
             placeholder="Поиск заявок..."
-            className="w-96 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="w-full max-w-96 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
           />
         </div>
 
         <div className="flex items-center gap-4">
           <button
             onClick={toggleLanguage}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="flex items-center p-2 hover:bg-gray-100 rounded-lg transition-colors"
             title={i18n.language === 'ru' ? 'Қазақша' : 'Русский'}
           >
             <Globe size={20} className="text-gray-600" />
