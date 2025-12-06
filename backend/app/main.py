@@ -14,6 +14,7 @@ from app.email_service import email_service
 from app.ticket_service import ticket_service
 from app.gemini_service import gemini_service
 from app.auth_service import auth_service
+from app.init_admin import create_default_admin
 
 
 # Pydantic models for API
@@ -89,6 +90,10 @@ async def lifespan(app: FastAPI):
     # Initialize database
     print("📊 Initializing database...")
     await init_db()
+
+    # Create default admin user
+    print("👤 Creating default admin user...")
+    await create_default_admin()
 
     # Load knowledge base
     print("📚 Loading knowledge base...")
