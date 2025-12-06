@@ -33,6 +33,9 @@ class Settings(BaseSettings):
     AUTO_RESOLVE_THRESHOLD: float = 0.85  # Confidence threshold for auto-resolution
     MAX_KNOWLEDGE_BASE_RESULTS: int = 3
 
+    # Authentication
+    SECRET_KEY: str = "your-secret-key-change-in-production-min-32-characters-long"  # Change this in production!
+
     class Config:
         env_file = ".env"
         case_sensitive = True

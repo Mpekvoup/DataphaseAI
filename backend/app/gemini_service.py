@@ -14,7 +14,7 @@ class GeminiService:
     def __init__(self):
         # Use Gemini 1.5 Flash for fast responses
         self.model = genai.GenerativeModel('gemini-1.5-flash')
-        self.embedding_model = 'models/embedding-001'
+        self.embedding_model = 'models/text-embedding-004'
 
     async def classify_ticket(self, title: str, description: str, language: str = "ru") -> Dict:
         """
@@ -38,18 +38,26 @@ class GeminiService:
 ЗАДАЧА: Классифицируй заявку по следующим параметрам:
 
 1. КАТЕГОРИЯ (выбери ОДНУ):
-   - technical: технические проблемы, ошибки, баги
-   - billing: вопросы по оплате, тарифам, счетам
-   - access: проблемы с доступом, паролем, авторизацией
-   - general: общие вопросы
-   - complaint: жалобы
+   - technical: технические проблемы, ошибки, баги, сайт не работает
+   - billing: вопросы по оплате, тарифам, счетам, деньгам
+   - access: проблемы с доступом, паролем, авторизацией, входом
+   - general: общие вопросы, информация
+   - complaint: жалобы, недовольство
    - feature_request: запрос новой функции
 
-2. ПРИОРИТЕТ (выбери ОДИН):
-   - low: некритично, можно подождать
-   - medium: стандартный вопрос
-   - high: важно, требует быстрого ответа
-   - urgent: критично, блокирует работу
+2. ПРИОРИТЕТ (ВНИМАТЕЛЬНО выбери по критериям):
+   - urgent: КРИТИЧНО! Работа полностью остановлена, потеря данных, серьезные ошибки, безопасность под угрозой
+   - high: ВАЖНО! Мешает работе, требует срочного решения, влияет на бизнес
+   - medium: Стандартный вопрос, не срочно, но требует ответа
+   - low: Некритично, информационный вопрос, можно подождать
+
+ПРИМЕРЫ ПРИОРИТЕТОВ:
+   - "Сайт не работает, выдает ошибку 500" → urgent
+   - "Не могу войти в систему, забыл пароль" → high
+   - "Хочу узнать про тарифы" → low
+   - "Как добавить пользователя?" → medium
+   - "Потерял все данные" → urgent
+   - "Медленно грузится страница" → medium
 
 3. ОТДЕЛ:
    - IT Support: проблемы с доступом, паролями
@@ -59,7 +67,8 @@ class GeminiService:
 
 4. УВЕРЕННОСТЬ: от 0.0 до 1.0
 
-ВЕРНИ ТОЛЬКО JSON (без объяснений):
+ВАЖНО: Верни ТОЛЬКО валидный JSON без каких-либо дополнительных текстов!
+
 {{
     "category": "...",
     "priority": "...",
@@ -79,9 +88,18 @@ class GeminiService:
                 text = text.split("```")[1].split("```")[0].strip()
 
             result = json.loads(text)
+
+            # Validate priority
+            valid_priorities = ["low", "medium", "high", "urgent"]
+            if result.get("priority") not in valid_priorities:
+                print(f"Invalid priority: {result.get('priority')}, using medium")
+                result["priority"] = "medium"
+
+            print(f"✅ Classified ticket: {result}")
             return result
         except Exception as e:
             print(f"Error in classify_ticket: {e}")
+            print(f"Response text: {text if 'text' in locals() else 'N/A'}")
             # Fallback classification
             return {
                 "category": "general",

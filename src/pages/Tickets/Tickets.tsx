@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Search,
@@ -10,70 +11,80 @@ import {
   Clock,
   AlertCircle,
   CheckCircle,
-  XCircle
+  XCircle,
+  Loader2
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { TicketStatus, TicketPriority, TicketChannel } from '../../types';
 import type { Ticket } from '../../types';
+import { apiService } from '../../services/api';
 
 const Tickets = () => {
   const { t } = useTranslation();
+  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Демо данные
-  const tickets: Ticket[] = [
-    {
-      id: 'T-2024-001',
-      title: 'Проблема с доступом к личному кабинету',
-      description: 'Не могу войти в личный кабинет, пишет неверный пароль',
-      status: TicketStatus.NEW,
-      priority: TicketPriority.HIGH,
-      category: 'access' as any,
-      channel: TicketChannel.EMAIL,
-      assignedDepartment: 'IT Support',
-      createdAt: new Date('2024-12-05T10:30:00'),
-      updatedAt: new Date('2024-12-05T10:30:00'),
-      autoResolved: false,
-      aiConfidence: 0.92,
-      language: 'ru',
-      customerEmail: 'user@example.com',
-      customerName: 'Иванов Иван'
-    },
-    {
-      id: 'T-2024-002',
-      title: 'Вопрос по тарифам',
-      description: 'Хочу узнать подробнее о корпоративном тарифе',
-      status: TicketStatus.AUTO_RESOLVED,
-      priority: TicketPriority.LOW,
-      category: 'billing' as any,
-      channel: TicketChannel.CHAT,
-      createdAt: new Date('2024-12-05T09:15:00'),
-      updatedAt: new Date('2024-12-05T09:20:00'),
-      resolvedAt: new Date('2024-12-05T09:20:00'),
-      autoResolved: true,
-      aiConfidence: 0.98,
-      language: 'ru',
-      customerEmail: 'client@example.kz',
-      customerName: 'Петрова Анна'
-    },
-    {
-      id: 'T-2024-003',
-      title: 'Техническая неисправность',
-      description: 'Не загружается страница отчетов',
-      status: TicketStatus.IN_PROGRESS,
-      priority: TicketPriority.URGENT,
-      category: 'technical' as any,
-      channel: TicketChannel.PORTAL,
-      assignedDepartment: 'Tech Team',
-      assignedTo: 'Сидоров А.',
-      createdAt: new Date('2024-12-05T08:45:00'),
-      updatedAt: new Date('2024-12-05T11:00:00'),
-      autoResolved: false,
-      aiConfidence: 0.87,
-      language: 'ru',
-      customerEmail: 'admin@company.kz',
-      customerName: 'Смирнов Петр'
+  // Загрузка тикетов из API
+  useEffect(() => {
+    loadTickets();
+  }, []);
+
+  const loadTickets = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await apiService.getTickets({ limit: 100 });
+
+      // Преобразуем данные из API в формат компонента
+      const transformedTickets: Ticket[] = response.tickets.map((ticket: any) => {
+        // Преобразование статуса: new -> NEW, auto_resolved -> AUTO_RESOLVED
+        const statusMap: Record<string, TicketStatus> = {
+          'new': TicketStatus.NEW,
+          'in_progress': TicketStatus.IN_PROGRESS,
+          'resolved': TicketStatus.RESOLVED,
+          'auto_resolved': TicketStatus.AUTO_RESOLVED,
+          'closed': TicketStatus.CLOSED
+        };
+
+        // Преобразование канала: email -> EMAIL, telegram -> TELEGRAM
+        const channelMap: Record<string, TicketChannel> = {
+          'email': TicketChannel.EMAIL,
+          'telegram': TicketChannel.CHAT,
+          'chat': TicketChannel.CHAT,
+          'portal': TicketChannel.PORTAL,
+          'phone': TicketChannel.PHONE
+        };
+
+        return {
+          id: ticket.ticket_id,
+          title: ticket.title,
+          description: ticket.description,
+          status: statusMap[ticket.status] || TicketStatus.NEW,
+          priority: ticket.priority.toUpperCase() as TicketPriority,
+          category: ticket.category as any,
+          channel: channelMap[ticket.channel] || TicketChannel.EMAIL,
+          assignedDepartment: ticket.assigned_department,
+          assignedTo: ticket.assigned_to,
+          createdAt: new Date(ticket.created_at),
+          updatedAt: new Date(ticket.updated_at),
+          resolvedAt: ticket.resolved_at ? new Date(ticket.resolved_at) : undefined,
+          autoResolved: ticket.auto_resolved,
+          aiConfidence: ticket.ai_confidence,
+          language: ticket.language,
+          customerEmail: ticket.customer_email,
+          customerName: ticket.customer_name
+        };
+      });
+
+      setTickets(transformedTickets);
+    } catch (err) {
+      console.error('Error loading tickets:', err);
+      setError('Не удалось загрузить тикеты');
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
   const getStatusIcon = (status: TicketStatus) => {
     switch (status) {
@@ -172,38 +183,61 @@ const Tickets = () => {
 
       {/* Таблица заявок */}
       <div className="card overflow-hidden p-0">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  ID
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Заявка
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Клиент
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Статус
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Приоритет
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Канал
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  ИИ
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Создана
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {tickets.map((ticket) => (
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="animate-spin text-primary-600" size={40} />
+            <span className="ml-3 text-gray-600">Загрузка тикетов...</span>
+          </div>
+        ) : error ? (
+          <div className="flex flex-col items-center justify-center py-12">
+            <AlertCircle className="text-red-600" size={48} />
+            <p className="mt-4 text-red-600 font-medium">{error}</p>
+            <button
+              onClick={loadTickets}
+              className="mt-4 btn-primary"
+            >
+              Попробовать снова
+            </button>
+          </div>
+        ) : tickets.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12">
+            <AlertCircle className="text-gray-400" size={48} />
+            <p className="mt-4 text-gray-600">Нет тикетов</p>
+            <p className="text-sm text-gray-500">Тикеты появятся здесь после создания обращений</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    ID
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Заявка
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Клиент
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Статус
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Приоритет
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Канал
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    ИИ
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Создана
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {tickets.map((ticket) => (
                 <tr
                   key={ticket.id}
                   className="hover:bg-gray-50 cursor-pointer transition-colors"
@@ -262,10 +296,11 @@ const Tickets = () => {
                     {format(ticket.createdAt, 'dd.MM.yyyy HH:mm')}
                   </td>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

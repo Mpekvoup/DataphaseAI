@@ -1,12 +1,23 @@
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Bell, User, Globe } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
+import { Bell, User, Globe, LogOut, ChevronDown } from 'lucide-react';
 
 const Header = () => {
   const { i18n } = useTranslation();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const [showUserMenu, setShowUserMenu] = useState(false);
 
   const toggleLanguage = () => {
     const newLang = i18n.language === 'ru' ? 'kk' : 'ru';
     i18n.changeLanguage(newLang);
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
   };
 
   return (
@@ -37,14 +48,32 @@ const Header = () => {
             <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
           </button>
 
-          <div className="flex items-center gap-2 pl-4 border-l border-gray-200">
-            <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center">
-              <User size={16} className="text-white" />
-            </div>
-            <div className="text-sm">
-              <div className="font-medium text-gray-900">Администратор</div>
-              <div className="text-gray-500 text-xs">admin@helpdesk.kz</div>
-            </div>
+          <div className="relative">
+            <button
+              onClick={() => setShowUserMenu(!showUserMenu)}
+              className="flex items-center gap-2 pl-4 border-l border-gray-200 hover:bg-gray-50 p-2 rounded-lg transition-colors"
+            >
+              <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center">
+                <User size={16} className="text-white" />
+              </div>
+              <div className="text-sm text-left">
+                <div className="font-medium text-gray-900">{user?.full_name || 'Пользователь'}</div>
+                <div className="text-gray-500 text-xs">{user?.email || ''}</div>
+              </div>
+              <ChevronDown size={16} className="text-gray-600" />
+            </button>
+
+            {showUserMenu && (
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1">
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                >
+                  <LogOut size={16} />
+                  Выйти
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>

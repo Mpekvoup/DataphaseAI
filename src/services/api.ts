@@ -49,11 +49,59 @@ export interface KnowledgeBaseEntry {
   distance?: number;
 }
 
+export interface User {
+  id: number;
+  email: string;
+  full_name: string;
+  role: string;
+  is_active: boolean;
+  telegram_id?: string;
+  telegram_username?: string;
+  created_at: string;
+  last_login?: string;
+}
+
+export interface AuthResponse {
+  access_token: string;
+  token_type: string;
+  user: User;
+}
+
+export interface LoginData {
+  email: string;
+  password: string;
+}
+
+export interface RegisterData {
+  email: string;
+  password: string;
+  full_name: string;
+  role?: string;
+}
+
 class ApiService {
   private baseUrl: string;
+  private token: string | null = null;
 
   constructor() {
     this.baseUrl = API_BASE_URL;
+    // Load token from localStorage
+    this.token = localStorage.getItem('auth_token');
+  }
+
+  // Set authentication token
+  setToken(token: string | null) {
+    this.token = token;
+    if (token) {
+      localStorage.setItem('auth_token', token);
+    } else {
+      localStorage.removeItem('auth_token');
+    }
+  }
+
+  // Get current token
+  getToken(): string | null {
+    return this.token;
   }
 
   // Helper method for API calls
@@ -63,12 +111,19 @@ class ApiService {
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
 
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...(options?.headers as Record<string, string>),
+    };
+
+    // Add authorization header if token exists
+    if (this.token) {
+      headers['Authorization'] = `Bearer ${this.token}`;
+    }
+
     const response = await fetch(url, {
       ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...options?.headers,
-      },
+      headers,
     });
 
     if (!response.ok) {
@@ -173,6 +228,44 @@ class ApiService {
     return this.request(`/api/ai/generate-response?${params}`, {
       method: 'POST',
     });
+  }
+
+  // Authentication API
+
+  async login(credentials: LoginData): Promise<AuthResponse> {
+    const response = await this.request<AuthResponse>('/api/auth/login', {
+      method: 'POST',
+      body: JSON.stringify(credentials),
+    });
+
+    // Store token
+    this.setToken(response.access_token);
+
+    return response;
+  }
+
+  async register(data: RegisterData): Promise<AuthResponse> {
+    const response = await this.request<AuthResponse>('/api/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+
+    // Store token
+    this.setToken(response.access_token);
+
+    return response;
+  }
+
+  async getCurrentUser(): Promise<User> {
+    return this.request('/api/auth/me');
+  }
+
+  logout() {
+    this.setToken(null);
+  }
+
+  isAuthenticated(): boolean {
+    return this.token !== null;
   }
 
   // Health check

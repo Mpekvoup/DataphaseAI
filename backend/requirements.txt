@@ -4,11 +4,16 @@ uvicorn[standard]==0.32.0
 pydantic==2.10.0
 pydantic-settings==2.6.0
 
+# Authentication & Security
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+python-multipart==0.0.20
+
 # Gemini AI
 google-generativeai==0.8.3
 
-# Vector Database
-chromadb==0.5.23
+# Vector Database (using SQLite + numpy instead of ChromaDB for Windows compatibility)
+numpy>=1.22.0
 
 # Telegram Bot
 python-telegram-bot==21.10
@@ -24,5 +29,4 @@ aiosqlite==0.20.0
 
 # Utils
 python-dotenv==1.0.1
-python-multipart==0.0.20
 asyncio==3.4.3

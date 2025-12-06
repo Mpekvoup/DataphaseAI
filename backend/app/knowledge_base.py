@@ -1,29 +1,60 @@
-"""ChromaDB Vector Database for Knowledge Base"""
-import chromadb
-from chromadb.config import Settings
+"""Simple Knowledge Base without ChromaDB (using SQLite)"""
 from typing import List, Dict
 from app.gemini_service import gemini_service
+from sqlalchemy import Column, Integer, String, Text, Float, create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
 import os
+import numpy as np
+
+Base = declarative_base()
+
+
+class KnowledgeEntry(Base):
+    """Knowledge base entry model"""
+    __tablename__ = "knowledge_base"
+
+    id = Column(Integer, primary_key=True)
+    doc_id = Column(String(100), unique=True)
+    question = Column(Text)
+    answer = Column(Text)
+    category = Column(String(50))
+    language = Column(String(10))
+    # Store embedding as JSON string (simplified)
+    embedding_str = Column(Text)
 
 
 class KnowledgeBase:
-    """Vector database for FAQ and knowledge base"""
+    """Simple vector database for FAQ and knowledge base"""
 
     def __init__(self):
         # Create data directory if not exists
         os.makedirs("./data", exist_ok=True)
 
-        # Initialize ChromaDB
-        self.client = chromadb.PersistentClient(
-            path="./data/chromadb",
-            settings=Settings(anonymized_telemetry=False)
-        )
+        # Initialize SQLite database
+        db_path = "./data/knowledge_base.db"
+        self.engine = create_engine(f"sqlite:///{db_path}")
+        Base.metadata.create_all(self.engine)
 
-        # Get or create collection
-        self.collection = self.client.get_or_create_collection(
-            name="helpdesk_kb",
-            metadata={"description": "Help Desk Knowledge Base"}
-        )
+        Session = sessionmaker(bind=self.engine)
+        self.session = Session()
+
+    def _cosine_similarity(self, vec1: List[float], vec2: List[float]) -> float:
+        """Calculate cosine similarity between two vectors"""
+        try:
+            arr1 = np.array(vec1)
+            arr2 = np.array(vec2)
+
+            dot_product = np.dot(arr1, arr2)
+            norm1 = np.linalg.norm(arr1)
+            norm2 = np.linalg.norm(arr2)
+
+            if norm1 == 0 or norm2 == 0:
+                return 0.0
+
+            return float(dot_product / (norm1 * norm2))
+        except:
+            return 0.0
 
     async def add_faq(
         self,
@@ -41,22 +72,32 @@ class KnowledgeBase:
         # Create unique ID
         doc_id = f"{category}_{language}_{hash(question) % 100000}"
 
-        # Prepare metadata
-        meta = {
-            "category": category,
-            "language": language,
-            "answer": answer
-        }
-        if metadata:
-            meta.update(metadata)
+        # Store embedding as comma-separated string
+        embedding_str = ",".join(map(str, embedding))
 
-        # Add to collection
-        self.collection.add(
-            ids=[doc_id],
-            embeddings=[embedding],
-            documents=[question],
-            metadatas=[meta]
-        )
+        # Check if entry exists
+        existing = self.session.query(KnowledgeEntry).filter_by(doc_id=doc_id).first()
+
+        if existing:
+            # Update existing entry
+            existing.question = question
+            existing.answer = answer
+            existing.category = category
+            existing.language = language
+            existing.embedding_str = embedding_str
+        else:
+            # Add new entry
+            entry = KnowledgeEntry(
+                doc_id=doc_id,
+                question=question,
+                answer=answer,
+                category=category,
+                language=language,
+                embedding_str=embedding_str
+            )
+            self.session.add(entry)
+
+        self.session.commit()
 
         return doc_id
 
@@ -77,31 +118,40 @@ class KnowledgeBase:
         # Create query embedding
         query_embedding = await gemini_service.create_embedding(query)
 
-        # Prepare filter
-        where = {"language": language}
+        # Get all entries matching filters
+        query_obj = self.session.query(KnowledgeEntry)
+        query_obj = query_obj.filter_by(language=language)
+
         if category:
-            where["category"] = category
+            query_obj = query_obj.filter_by(category=category)
 
-        # Search
-        results = self.collection.query(
-            query_embeddings=[query_embedding],
-            n_results=top_k,
-            where=where if where else None
-        )
+        entries = query_obj.all()
 
-        # Format results
-        faqs = []
-        if results['documents'] and results['documents'][0]:
-            for i, doc in enumerate(results['documents'][0]):
-                metadata = results['metadatas'][0][i]
-                faqs.append({
-                    "question": doc,
-                    "answer": metadata.get("answer", ""),
-                    "category": metadata.get("category", "general"),
-                    "distance": results['distances'][0][i] if results.get('distances') else 0
-                })
+        # Calculate similarities
+        results = []
+        for entry in entries:
+            # Parse embedding
+            try:
+                embedding = list(map(float, entry.embedding_str.split(",")))
+            except:
+                continue
 
-        return faqs
+            # Calculate similarity (convert to distance)
+            similarity = self._cosine_similarity(query_embedding, embedding)
+            distance = 1.0 - similarity  # Convert similarity to distance
+
+            results.append({
+                "question": entry.question,
+                "answer": entry.answer,
+                "category": entry.category,
+                "distance": distance,
+                "similarity": similarity
+            })
+
+        # Sort by distance (lower is better) and take top_k
+        results.sort(key=lambda x: x["distance"])
+
+        return results[:top_k]
 
     async def load_default_kb(self):
         """Load default knowledge base entries"""
@@ -194,10 +244,10 @@ class KnowledgeBase:
 
     def get_stats(self) -> Dict:
         """Get knowledge base statistics"""
-        count = self.collection.count()
+        count = self.session.query(KnowledgeEntry).count()
         return {
             "total_entries": count,
-            "collection_name": self.collection.name
+            "collection_name": "knowledge_base"
         }
 
 
