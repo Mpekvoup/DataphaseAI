@@ -7,7 +7,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
   RadarChart,
   PolarGrid,
@@ -75,13 +74,6 @@ const Analytics = () => {
     ticketsHandled: count as number,
     category: category
   }));
-
-  const channelDistribution = [
-    { channel: 'Email', count: 0, autoResolved: 0 },
-    { channel: 'Telegram', count: 0, autoResolved: 0 },
-    { channel: 'Портал', count: 0, autoResolved: 0 },
-    { channel: 'Телефон', count: 0, autoResolved: 0 }
-  ];
 
   const aiPerformance = [
     {
@@ -177,7 +169,7 @@ const Analytics = () => {
                   cy="50%"
                   labelLine={false}
                   label={({ name, percent }) =>
-                    `${name} ${(percent * 100).toFixed(0)}%`
+                    `${name} ${((percent ?? 0) * 100).toFixed(0)}%`
                   }
                   outerRadius={100}
                   fill="#8884d8"

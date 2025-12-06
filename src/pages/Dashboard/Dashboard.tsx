@@ -14,8 +14,6 @@ import {
 } from 'lucide-react';
 import StatCard from '../../components/ui/StatCard';
 import {
-  LineChart,
-  Line,
   BarChart,
   Bar,
   PieChart,
@@ -25,10 +23,7 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
-  ResponsiveContainer,
-  AreaChart,
-  Area
+  ResponsiveContainer
 } from 'recharts';
 import { apiService } from '../../services/api';
 
