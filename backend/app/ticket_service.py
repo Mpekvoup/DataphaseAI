@@ -95,7 +95,27 @@ class TicketService:
             session.add(ticket)
             await session.commit()
 
-        print(f"✅ Ticket created: {ticket_id} | Status: {status} | Confidence: {ai_result.get('confidence', 0):.2f}")
+        print(f"✅ Ticket created: {ticket_id} | Status: {status} | Priority: {classification.get('priority')} | Confidence: {ai_result.get('confidence', 0):.2f}")
+
+        # Step 6: AUTO-LEARNING - Add successful resolutions to knowledge base
+        # If auto-resolved with high confidence, add to KB for future learning
+        if can_auto_resolve and ai_result.get("confidence", 0) >= 0.8:
+            try:
+                await knowledge_base.add_faq(
+                    question=description,
+                    answer=ai_result.get("response", ""),
+                    category=classification.get("category", "general"),
+                    language=language,
+                    metadata={
+                        "ticket_id": ticket_id,
+                        "confidence": ai_result.get("confidence", 0),
+                        "auto_learned": True,
+                        "created_at": datetime.utcnow().isoformat()
+                    }
+                )
+                print(f"🎓 AUTO-LEARNING: Added ticket {ticket_id} to knowledge base")
+            except Exception as e:
+                print(f"⚠️  Failed to add to knowledge base: {e}")
 
         return {
             "ticket_id": ticket_id,
