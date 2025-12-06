@@ -21,13 +21,17 @@ class AuthService:
 
     @staticmethod
     def hash_password(password: str) -> str:
-        """Hash a password using bcrypt"""
-        return pwd_context.hash(password)
+        """Hash a password using bcrypt (max 72 bytes)"""
+        # Bcrypt has a 72 byte limit, truncate if necessary
+        password_bytes = password.encode('utf-8')[:72]
+        return pwd_context.hash(password_bytes.decode('utf-8', errors='ignore'))
 
     @staticmethod
     def verify_password(plain_password: str, hashed_password: str) -> bool:
         """Verify a password against its hash"""
-        return pwd_context.verify(plain_password, hashed_password)
+        # Bcrypt has a 72 byte limit, truncate if necessary
+        password_bytes = plain_password.encode('utf-8')[:72]
+        return pwd_context.verify(password_bytes.decode('utf-8', errors='ignore'), hashed_password)
 
     @staticmethod
     def create_access_token(data: Dict, expires_delta: Optional[timedelta] = None) -> str:
