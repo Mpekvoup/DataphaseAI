@@ -282,6 +282,3 @@ class ApiService {
 
 // Export singleton instance
 export const apiService = new ApiService();
-
-// Explicit type exports for better module resolution
-export type { User, AuthResponse, LoginData, RegisterData };
