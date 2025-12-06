@@ -1,5 +1,5 @@
 """Main FastAPI application"""
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from pydantic import BaseModel, EmailStr
@@ -13,6 +13,7 @@ from app.telegram_bot import telegram_bot
 from app.email_service import email_service
 from app.ticket_service import ticket_service
 from app.gemini_service import gemini_service
+from app.auth_service import auth_service
 
 
 # Pydantic models for API
@@ -30,6 +31,53 @@ class KnowledgeBaseEntry(BaseModel):
     answer: str
     category: str
     language: str = "ru"
+
+
+class UserRegister(BaseModel):
+    email: EmailStr
+    password: str
+    full_name: str
+    role: str = "user"
+
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str
+    user: dict
+
+
+# Dependency for getting current user from JWT token
+async def get_current_user(authorization: Optional[str] = Header(None)):
+    """Get current user from JWT token in Authorization header"""
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    try:
+        # Extract token from "Bearer <token>"
+        scheme, token = authorization.split()
+        if scheme.lower() != "bearer":
+            raise HTTPException(status_code=401, detail="Invalid authentication scheme")
+
+        # Verify token
+        email = await auth_service.verify_token(token)
+        if not email:
+            raise HTTPException(status_code=401, detail="Invalid token")
+
+        # Get user from database
+        user = await auth_service.get_user_by_email(email)
+        if not user:
+            raise HTTPException(status_code=401, detail="User not found")
+
+        return user
+    except ValueError:
+        raise HTTPException(status_code=401, detail="Invalid authorization header")
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=str(e))
 
 
 # Lifespan context manager for startup/shutdown
@@ -245,6 +293,78 @@ async def generate_response(description: str, category: str, language: str = "ru
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# Authentication endpoints
+
+@app.post("/api/auth/register", response_model=TokenResponse)
+async def register(user_data: UserRegister):
+    """Register a new user"""
+    try:
+        # Check password length
+        if len(user_data.password) < 6:
+            raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+
+        # Register user
+        user = await auth_service.register_user(
+            email=user_data.email,
+            password=user_data.password,
+            full_name=user_data.full_name,
+            role=user_data.role
+        )
+
+        if not user:
+            raise HTTPException(status_code=400, detail="Email already registered")
+
+        # Create access token
+        access_token = auth_service.create_access_token(
+            data={"sub": user["email"]}
+        )
+
+        return {
+            "access_token": access_token,
+            "token_type": "bearer",
+            "user": user
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/auth/login", response_model=TokenResponse)
+async def login(credentials: UserLogin):
+    """Login user and return JWT token"""
+    try:
+        # Authenticate user
+        user = await auth_service.authenticate_user(
+            email=credentials.email,
+            password=credentials.password
+        )
+
+        if not user:
+            raise HTTPException(status_code=401, detail="Invalid email or password")
+
+        # Create access token
+        access_token = auth_service.create_access_token(
+            data={"sub": user["email"]}
+        )
+
+        return {
+            "access_token": access_token,
+            "token_type": "bearer",
+            "user": user
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/auth/me")
+async def get_current_user_info(current_user: dict = Depends(get_current_user)):
+    """Get current user information"""
+    return current_user
 
 
 # Run application
